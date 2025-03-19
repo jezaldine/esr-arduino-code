@@ -111,7 +111,6 @@ void emergencyCallback(bool isEmergency) {
 void pumpToBoiler(int boilSizeValue, bool isExtractionStart) {
   if (boilSizeValue != 0 && isExtractionStart){
       int transferingTime = 50000 * boilSizeValue;
-      int cookingTime = 10000 * boilSizeValue;
       digitalWrite(pumpToBoilPin, LOW);
       digitalWrite(transferingToDrying, HIGH);
       Serial.println("Pump to Boiler is working...");
@@ -119,27 +118,27 @@ void pumpToBoiler(int boilSizeValue, bool isExtractionStart) {
       delay(transferingTime);
       digitalWrite(pumpToBoilPin, HIGH);
       Firebase.RTDB.setBool(&fbdo, "Controls/startExtraction", false);
-      Serial.println("Pump to Boiler is STOP...");
-      Firebase.RTDB.setInt(&fbdo, "Timer/cooking", cookingTime);
-      Firebase.RTDB.setBool(&fbdo, "Pass/isCooking", true);
-      digitalWrite(rotateBoiler, LOW);
-      digitalWrite(boilPin1, LOW);
-      digitalWrite(boilPin2, LOW);
-      Serial.println("Boiler is working...");
-      delay(cookingTime);
-      Firebase.RTDB.setBool(&fbdo, "Pass/isCooking", false);
-      digitalWrite(rotateBoiler, HIGH);
-      digitalWrite(boilPin1, HIGH);
-      digitalWrite(boilPin2, HIGH);
-      Serial.println("Boiler is stop...");
-      Firebase.RTDB.setBool(&fbdo, "Pass/transferToDrying", true);
-      digitalWrite(transferingToDrying, LOW);
-      Serial.println("Transfering to Drying...");
-      delay(90000 * boilSizeValue);
-      Serial.println("Transfering to drying is stop...");
-      digitalWrite(transferingToDrying, HIGH);
-      Firebase.RTDB.setBool(&fbdo, "Pass/transferToDrying", false);
-      Firebase.RTDB.setBool(&fbdo, "Pass/isDrying", true);
+      // Serial.println("Pump to Boiler is STOP...");
+      // Firebase.RTDB.setInt(&fbdo, "Timer/cooking", cookingTime);
+      // Firebase.RTDB.setBool(&fbdo, "Pass/isCooking", true);
+      // digitalWrite(rotateBoiler, LOW);
+      // digitalWrite(boilPin1, LOW);
+      // digitalWrite(boilPin2, LOW);
+      // Serial.println("Boiler is working...");
+      // delay(cookingTime);
+      // Firebase.RTDB.setBool(&fbdo, "Pass/isCooking", false);
+      // digitalWrite(rotateBoiler, HIGH);
+      // digitalWrite(boilPin1, HIGH);
+      // digitalWrite(boilPin2, HIGH);
+      // Serial.println("Boiler is stop...");
+      // Firebase.RTDB.setBool(&fbdo, "Pass/transferToDrying", true);
+      // digitalWrite(transferingToDrying, LOW);
+      // Serial.println("Transfering to Drying...");
+      // delay(90000 * boilSizeValue);
+      // Serial.println("Transfering to drying is stop...");
+      // digitalWrite(transferingToDrying, HIGH);
+      // Firebase.RTDB.setBool(&fbdo, "Pass/transferToDrying", false);
+      // Firebase.RTDB.setBool(&fbdo, "Pass/isDrying", true);
     }
 }
 
@@ -204,6 +203,33 @@ void loop() {
     } else {
       Serial.println("Failed to read Auto: " + fbdo.errorReason());
     }
+    if (Firebase.RTDB.getBool(&fbdo, "Controls/boil")) {
+      if (fbdo.dataType() == "boolean"){
+        bool boilStateStr = fbdo.boolData();
+        Serial.println("Seccess: " + fbdo.dataPath() + ": " + boilStateStr + "(" + fbdo.dataType() + ")");
+        bool boilState = (boilStateStr == false) ? HIGH : LOW;
+        digitalWrite(rotateBoiler, boilState);
+        digitalWrite(boilPin1, boilState);
+        digitalWrite(boilPin2, boilState);
+    }
+      
+    } else {
+      Serial.println("Failed to read Auto: " + fbdo.errorReason());
+    }
+
+     if (Firebase.RTDB.getBool(&fbdo, "Controls/dry")) {
+      if (fbdo.dataType() == "boolean"){
+        bool dryStateStr = fbdo.boolData();
+        Serial.println("Seccess: " + fbdo.dataPath() + ": " + dryStateStr + "(" + fbdo.dataType() + ")");
+        Firebase.RTDB.setBool(&fbdo, "Pass/isDrying", dryStateStr);
+        bool dryState = (dryStateStr == false) ? HIGH : LOW;
+        digitalWrite(transferingToDrying, dryState);
+    }
+      
+    } else {
+      Serial.println("Failed to read Auto: " + fbdo.errorReason());
+    }
+
     if (Firebase.RTDB.getInt(&fbdo, "Sizes/boilSize")) {
           boilSize = fbdo.intData();
           Serial.print("Seccess! Boil: ");
@@ -245,6 +271,7 @@ void loop() {
     } else {
         Serial.println("Failed to read Auto: " + fbdo.errorReason());
     }
+    
     if (Firebase.RTDB.getBool(&fbdo, "Emergency/button")) {
           bool emergencyValue = fbdo.boolData();
           Serial.println(emergencyValue);
